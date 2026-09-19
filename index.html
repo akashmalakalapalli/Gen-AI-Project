@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medical Information RAG Assistant</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f3f6fa;color:#172033}
+.container{max-width:950px;margin:25px auto;padding:18px}.card{background:white;border-radius:16px;padding:24px;margin-bottom:18px;box-shadow:0 5px 20px #0001}
+h1{color:#174a75;margin-top:0}.muted{color:#64748b}label{font-weight:bold;display:block;margin:12px 0 8px}
+textarea{width:100%;min-height:100px;padding:12px;border:1px solid #cbd5e1;border-radius:9px;font-size:16px}
+button{background:#1769aa;color:white;border:0;border-radius:8px;padding:12px 20px;margin-top:12px;cursor:pointer}
+.panel{padding:16px;border-radius:10px;margin-top:15px;white-space:pre-wrap;line-height:1.6}
+.input{background:#eff6ff;border-left:5px solid #2563eb}.context{background:#f0fdf4;border-left:5px solid #16a34a}
+.output{background:#faf5ff;border-left:5px solid #9333ea}.source{background:#fff7ed;border-left:5px solid #d97706}
+.tag{font-size:12px;font-weight:bold;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.hidden{display:none}.doc{background:#f8fafc;padding:12px;border-radius:8px;margin:8px 0}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="card">
+<h1>Medical Information RAG Assistant</h1>
+<p class="muted">Educational RAG system using a controlled medical document knowledge base.</p>
+<label for="question">Enter your question</label>
+<textarea id="question" placeholder="Example: What are common symptoms of diabetes?"></textarea>
+<button onclick="runRAG()">Submit Question</button>
+</div>
+
+<div class="card">
+<h2>Input Documents</h2>
+<p class="muted">These are the approved documents used by this demo.</p>
+<div id="documentList"></div>
+</div>
+
+<div id="results" class="card hidden">
+<h2>RAG Process Demonstration</h2>
+<div class="panel input"><div class="tag">1. Input</div><div id="inputText"></div></div>
+<div class="panel context"><div class="tag">2. Retrieved Context / Extracted Information</div><div id="contextText"></div></div>
+<div class="panel output"><div class="tag">3. Output</div><div id="outputText"></div></div>
+<div class="panel source"><div class="tag">4. Sources</div><div id="sourceText"></div></div>
+</div>
+
+<div class="card">
+<b>Safety notice:</b> This assistant provides general educational information only. It does not diagnose diseases or recommend personalized treatment.
+</div>
+</div>
+
+<script>
+const documents = [
+{file:"diabetes.txt",title:"Diabetes Information",keywords:["diabetes","blood sugar","thirst","urination","urine","hunger","fatigue","blurred vision"],text:"Diabetes is a condition in which blood glucose levels are too high. Common symptoms can include increased thirst, frequent urination, increased hunger, tiredness, blurred vision, and unexplained weight loss. Some people may have no noticeable symptoms. Appropriate medical tests are needed for evaluation."},
+{file:"fever.txt",title:"Fever Information",keywords:["fever","temperature","chills","shivering","body pain","sweating"],text:"Fever is a temporary increase in body temperature, often related to infection or inflammation. It may occur with sweating, chills, headache, tiredness, or body aches. General information cannot determine the cause of a person's fever."},
+{file:"common_cold.txt",title:"Common Cold Information",keywords:["cold","cough","sneeze","sneezing","runny nose","sore throat"],text:"The common cold is a viral infection that can cause a runny or blocked nose, sneezing, sore throat, cough, and tiredness. Symptoms often improve with time. This information cannot establish a diagnosis for an individual."},
+{file:"healthy_lifestyle.txt",title:"Healthy Lifestyle Information",keywords:["healthy","exercise","sleep","water","diet","food","lifestyle"],text:"General healthy-lifestyle information includes eating a varied diet, staying physically active according to personal ability, getting adequate sleep, drinking water, and avoiding tobacco. Individual health needs differ."}
+];
+
+document.getElementById("documentList").innerHTML = documents.map(d => '<div class="doc"><b>'+d.file+'</b><br>'+d.title+'</div>').join("");
+
+function retrieve(question){
+ const q=question.toLowerCase();
+ return documents.map(d=>({...d,score:d.keywords.reduce((n,k)=>n+(q.includes(k)?1:0),0)}))
+ .filter(d=>d.score>0).sort((a,b)=>b.score-a.score).slice(0,2);
+}
+function runRAG(){
+ const q=document.getElementById("question").value.trim();
+ if(!q){alert("Please enter a question.");return;}
+ const found=retrieve(q);
+ document.getElementById("results").classList.remove("hidden");
+ document.getElementById("inputText").textContent=q;
+ if(!found.length){
+  document.getElementById("contextText").textContent="No relevant document was retrieved from the controlled knowledge base.";
+  document.getElementById("outputText").textContent="I could not find sufficient information in the approved medical knowledge base to answer this question. Please ask a general question related to the available documents.";
+  document.getElementById("sourceText").textContent="No relevant source found.";
+  return;
+ }
+ document.getElementById("contextText").textContent=found.map(d=>"["+d.file+"]\n"+d.text).join("\n\n");
+ document.getElementById("outputText").textContent=found.map(d=>d.text).join("\n\n")+"\n\nThis is general educational information, not a diagnosis or personalized treatment recommendation.";
+ document.getElementById("sourceText").textContent=found.map(d=>"• "+d.file+" — "+d.title).join("\n");
+}
+</script>
+</body>
+</html>
